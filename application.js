@@ -3,7 +3,11 @@ require("dotenv").config(); // This is the correct way to initialize dotenv in a
 const multer = require("multer");
 const roomRoutes = require("./routes/roomRoutes");
 const authRoutes = require("./routes/authRoutes");
-const { fetchCognitoUserDetails, refreshAccessToken } = require('./utils/CognitoService');
+const {
+  fetchCognitoUserDetails,
+  fetchCognitoProfessorDetails,
+  refreshAccessToken,
+} = require("./utils/CognitoService");
 
 const {
   S3Client,
@@ -177,6 +181,7 @@ app.get("/extract", async (req, res) => {
   }
 });
 
+//Student signup
 app.post("/api/auth/exchange", async (req, res) => {
   const { code } = req.body;
   console.log(code);
@@ -212,17 +217,79 @@ app.post("/api/auth/exchange", async (req, res) => {
 
     console.log(response.data.expires_in); // gets refresh token,id_token, access_token,
 
-    const userDetails = await fetchCognitoUserDetails(response.data.access_token);
+    const userDetails = await fetchCognitoUserDetails(
+      response.data.access_token
+    );
 
-    console.log(userDetails)    
+    console.log(userDetails);
     res.json({
-      userEmail :userDetails.email,
-      userName:userDetails.username,
+      userEmail: userDetails.email,
+      userName: userDetails.username,
       accessToken: response.data.access_token,
       idToken: response.data.id_token,
       expiresIn: response.data.expires_in,
-      refreshToken: response.data.refresh_token
+      refreshToken: response.data.refresh_token,
     });
+  } catch (error) {
+    console.error(
+      "Error exchanging code for tokens:",
+      error.response ? error.response.data : error.message
+    );
+  }
+});
+
+//Professor signup
+app.post("/api/auth/professor/exchange", async (req, res) => {
+  console.log("kooo")
+  const { code } = req.body;
+  console.log(code);
+  const clientId = process.env.COGNITO_CLIENT_ID_PROFESSOR;
+  const clientSecret = process.env.COGNITO_CLIENT_SECRET_PROFESSOR;
+  const redirectUri = "https://localhost:3000/auth/callback/professor";
+  const cognitoDomain = process.env.COGNITO_PROFESSOR_DOMAIN_URL;
+
+  const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString(
+    "base64"
+  );
+
+  // Manually construct the URL-encoded body
+  const data = `grant_type=authorization_code&client_id=${encodeURIComponent(
+    clientId
+  )}&code=${encodeURIComponent(code)}&redirect_uri=${encodeURIComponent(
+    redirectUri
+  )}`;
+
+  // Prepare the headers
+  const headers = {
+    "Content-Type": "application/x-www-form-urlencoded",
+    Authorization: `Basic ${basicAuth}`,
+  };
+
+  try {
+    // Make the request
+    const response = await axios.post(
+      `https://${cognitoDomain}/oauth2/token`,
+      data,
+      { headers }
+    );
+
+    console.log(response.data.expires_in); // gets refresh token,id_token, access_token,
+
+    const userDetails = await fetchCognitoProfessorDetails(
+      response.data.access_token
+    );
+
+    console.log(userDetails);
+
+    res.json({
+      userEmail: userDetails.email,
+      userName: userDetails.username,
+      accessToken: response.data.access_token,
+      idToken: response.data.id_token,
+      expiresIn: response.data.expires_in,
+      refreshToken: response.data.refresh_token,
+    });
+
   } catch (error) {
     console.error(
       "Error exchanging code for tokens:",
@@ -234,9 +301,7 @@ app.post("/api/auth/exchange", async (req, res) => {
 // Register the room routes
 app.use("/room", roomRoutes);
 
-app.use('/api/auth', authRoutes);
-
-
+app.use("/api/auth", authRoutes);
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);

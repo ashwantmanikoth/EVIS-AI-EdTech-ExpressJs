@@ -4,7 +4,8 @@ const clientSecret = process.env.COGNITO_CLIENT_SECRET;
 const AWS = require("aws-sdk");
 
 const cognitoConfig = {
-  domain: process.env.COGNITO_DOMAIN_URL,
+  student_domain: process.env.COGNITO_DOMAIN_URL,
+  professor_domain:process.env.COGNITO_PROFESSOR_DOMAIN_URL,
   clientId: clientId,
   clientSecret: clientSecret,
   region: "us-east-1"
@@ -13,7 +14,21 @@ const cognitoConfig = {
 async function fetchCognitoUserDetails(accessToken) {
   try {
     const response = await axios.get(
-      `https://${cognitoConfig.domain}/oauth2/userInfo`,
+      `https://${cognitoConfig.student_domain}/oauth2/userInfo`,
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching Cognito user details:", error);
+    throw error;
+  }
+}
+async function fetchCognitoProfessorDetails(accessToken) {
+  try {
+    const response = await axios.get(
+      `https://${cognitoConfig.professor_domain}/oauth2/userInfo`,
       {
         headers: { Authorization: `Bearer ${accessToken}` },
       }
@@ -83,6 +98,7 @@ async function globalSignOutUser(accessToken) {
 
 module.exports = {
   fetchCognitoUserDetails,
+  fetchCognitoProfessorDetails,
   refreshAccessToken,
   globalSignOutUser,
 };

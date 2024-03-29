@@ -1,5 +1,5 @@
 const express = require('express');
-const { fetchCognitoUserDetails, refreshAccessToken, globalSignOutUser } = require('../utils/CognitoService');
+const { fetchCognitoUserDetails, fetchCognitoProfessorDetails, refreshAccessToken, globalSignOutUser } = require('../utils/CognitoService');
 const { use } = require('./roomRoutes');
 
 const router = express.Router();
@@ -9,6 +9,18 @@ router.post("/user-details", async (req, res) => {
   try {
     const { accessToken } = req.body;
     const userDetails = await fetchCognitoUserDetails(accessToken);
+    console.log(userDetails);
+    res.json(userDetails);
+  } catch (error) {
+    res.status(500).send({ message: "Failed to fetch user details" });
+  }
+});
+
+router.post("/professor-details", async (req, res) => {
+  console.log("herer");
+  try {
+    const { accessToken } = req.body;
+    const userDetails = await fetchCognitoProfessorDetails(accessToken);
     console.log(userDetails);
     res.json(userDetails);
   } catch (error) {
