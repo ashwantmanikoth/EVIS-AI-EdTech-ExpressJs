@@ -4,9 +4,10 @@ const clientSecret = process.env.COGNITO_CLIENT_SECRET;
 const AWS = require("aws-sdk");
 
 const cognitoConfig = {
-  domain: "evis-auth.auth.us-east-1.amazoncognito.com",
+  domain: process.env.COGNITO_DOMAIN_URL,
   clientId: clientId,
   clientSecret: clientSecret,
+  region: "us-east-1"
 };
 
 async function fetchCognitoUserDetails(accessToken) {
@@ -50,30 +51,38 @@ async function refreshAccessToken(refreshToken) {
 }
 
 // Import necessary AWS SDK clients and commands
-// const {
-//   CognitoIdentityProviderClient,
-//   GlobalSignOutCommand,
-// } = require("@aws-sdk/client-cognito-identity-provider");
+// Initialize the CognitoIdentityProviderClient with your region
 
-// // Initialize the CognitoIdentityProviderClient with your region
-// const client = new CognitoIdentityProviderClient({ region: "us-east-1" });
+const cognitoIdentityServiceProvider = new AWS.CognitoIdentityServiceProvider({
+  region: 'us-east-1', // make sure to set this to your region
 
-// async function globalSignOutUser(accessToken) {
-//   try {
-//     // Create and send the GlobalSignOutCommand
-//     const command = new GlobalSignOutCommand({
-//       AccessToken: accessToken, // The user's access token
-//     });
-//     const response = await client.send(command);
-//     console.log("Successfully signed out the user globally:", response);
-//     return true;
-//   } catch (error) {
-//     console.error("Error signing out the user globally:", error);
-//   }
-// }
+});
+
+async function globalSignOutUser(accessToken) {
+
+  return new Promise((resolve, reject) => {
+    if (!accessToken) {
+      // Reject the promise if accessToken is not provided
+      reject(new Error('Access token is required'));
+    } else {
+      const params = {
+        AccessToken: accessToken,
+      };
+
+      cognitoIdentityServiceProvider.globalSignOut(params, (err, data) => {
+        if (err) {
+          console.error(err);
+          reject(err); // Reject the promise on error
+        } else {
+          resolve(data); // Resolve the promise with the data on success
+        }
+      });
+    }
+  });
+}
 
 module.exports = {
   fetchCognitoUserDetails,
   refreshAccessToken,
-  // globalSignOutUser,
+  globalSignOutUser,
 };

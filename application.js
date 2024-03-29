@@ -183,7 +183,7 @@ app.post("/api/auth/exchange", async (req, res) => {
   const clientId = process.env.COGNITO_CLIENT_ID;
   const clientSecret = process.env.COGNITO_CLIENT_SECRET;
   const redirectUri = "https://localhost:3000/auth/callback";
-  const cognitoDomain = "evis-auth.auth.us-east-1.amazoncognito.com";
+  const cognitoDomain = process.env.COGNITO_DOMAIN_URL;
 
   const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString(
     "base64"
