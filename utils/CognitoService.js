@@ -47,7 +47,7 @@ async function refreshAccessToken(refreshToken) {
   )}&refresh_token=${encodeURIComponent(refreshToken)}`;
 
   const options = {
-    headers: {
+    headers: {git
       "Content-Type": "application/x-www-form-urlencoded",
       // Include the Authorization header if your app uses a client secret
       Authorization: `Basic ${Buffer.from(
