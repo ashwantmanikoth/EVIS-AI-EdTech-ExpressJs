@@ -10,10 +10,12 @@ const router = express.Router();
 router.post("/create", async (req, res) => {
   try {
     const roomName = req.body.roomName;
+    const userEmail = req.body.userEmail;
+
     if (!roomName) {
       return res.status(400).send({ message: "Room name is required" });
     }
-    const response = await createRoom(roomName);
+    const response = await createRoom(roomName,userEmail);
     if (response.success) {
       res.json(response.roomId);
     } else {

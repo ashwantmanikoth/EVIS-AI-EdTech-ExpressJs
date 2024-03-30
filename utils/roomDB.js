@@ -22,23 +22,22 @@ const config = {
 
 const dynamoDb = new DynamoDBClient(config);
 
-async function createRoom(roomName) {
-  console.log("tyjgh");
+async function createRoom(roomName,userEmail) {
   // const { roomName, professorId } = req.body;
-  const professorId = 2;
+
   const roomId = generateRoomId();
   const input = {
     TableName: "room",
     Item: {
       roomId: { S: roomId },
-      professorId: { N: String(professorId) },
+      professorId: { S: userEmail },
       roomName: { S: roomName },
     },
   };
 
   const roomExists = await checkRoomIfExists({ roomName: roomName });
   if (roomExists) {
-    console.log("pp");
+    
     const command = new PutItemCommand(input);
     try {
       // const res = await dynamoDb.send(command);
