@@ -94,7 +94,7 @@ function generateRoomId() {
 
 async function createTable(roomId) {
   const input = {
-    TableName: "Quiz_questions_" + roomId, // Assuming roomId is a variable containing the room ID
+    TableName: "quiz_questions_" + roomId, // Assuming roomId is a variable containing the room ID
     AttributeDefinitions: [
       {
         AttributeName: "quiz_number",
