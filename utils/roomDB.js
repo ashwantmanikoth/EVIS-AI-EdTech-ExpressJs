@@ -114,11 +114,11 @@ async function createTable(roomId) {
     AttributeDefinitions: [
       {
         AttributeName: "quiz_number",
-        AttributeType: "S", // S = String, defining quiz_number as a String type for the partition key
+        AttributeType: "N", // S = String, defining quiz_number as a String type for the partition key
       },
       {
         AttributeName: "question_number",
-        AttributeType: "S", // S = String, defining question_number as a String type for the sort key
+        AttributeType: "N", // S = String, defining question_number as a String type for the sort key
       },
       // Add other attribute definitions here if needed
     ],
