@@ -2,6 +2,7 @@ const express = require("express");
 const {
   DynamoDBClient,
   PutItemCommand,
+  GetItemCommand,
   CreateTableCommand,
   ScanCommand,
 } = require("@aws-sdk/client-dynamodb");
@@ -35,7 +36,7 @@ async function createRoom(roomName) {
     },
   };
 
-  const roomExists = await checkIfRoomExists(roomName);
+  const roomExists = await checkRoomIfExists({ roomName: roomName });
   if (roomExists) {
     console.log("pp");
     const command = new PutItemCommand(input);
@@ -63,26 +64,41 @@ async function createRoom(roomName) {
   }
 }
 
-async function checkIfRoomExists(roomName) {
+async function checkRoomIfExists(identifier) {
+  console.log("kk");
   /*Scannning if the new room name already exists or not */
-  console.log("room name is " + roomName);
-  const params = {
-    TableName: "room",
-    FilterExpression: "roomName = :roomName",
-    ExpressionAttributeValues: {
-      ":roomName": { S: roomName },
-    },
-  };
+  if (typeof identifier === "object" && identifier.hasOwnProperty("roomName")) {
+    console.log("room name is " + identifier.roomName);
+    const params = {
+      TableName: "room",
+      FilterExpression: "roomName = :roomName",
+      ExpressionAttributeValues: {
+        ":roomName": { S: identifier.roomName },
+      },
+    };
 
-  try {
-    const command = new ScanCommand(params);
-    const result = await dynamoDb.send(command);
-    console.log(result); //pending
+    try {
+      const command = new ScanCommand(params);
+      const result = await dynamoDb.send(command);
+      console.log(result); //pending
 
-    return result.Count == 0; // Simplified return
-  } catch (error) {
-    console.error("Error checking room existence:", error);
-    throw error; // Rethrow to handle it in the calling function
+      return result.Count == 0; // Simplified return
+    } catch (error) {
+      console.error("Error checking room existence:", error);
+      throw error; // Rethrow to handle it in the calling function
+    }
+  } else if (typeof identifier === "object" && identifier.hasOwnProperty("roomId")) {
+    const roomId = identifier.roomId;
+    const params = {
+      TableName: "room",
+      Key: {
+        roomId: { S: identifier.roomId },
+      },
+    };
+
+    const result = await dynamoDb.send(new GetItemCommand(params));
+    // console.log(result.Item.length >0)
+    return result.Item.roomName.S; //returns true when no Room eists
   }
 }
 
@@ -129,4 +145,4 @@ async function createTable(roomId) {
   }
 }
 
-module.exports = { createRoom, checkIfRoomExists, createTable };
+module.exports = { createRoom, checkRoomIfExists, createTable };
