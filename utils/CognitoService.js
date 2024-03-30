@@ -26,6 +26,7 @@ async function fetchCognitoUserDetails(accessToken) {
   }
 }
 async function fetchCognitoProfessorDetails(accessToken) {
+  console.log("hey hey")
   try {
     const response = await axios.get(
       `https://${cognitoConfig.professor_domain}/oauth2/userInfo`,
@@ -47,7 +48,7 @@ async function refreshAccessToken(refreshToken) {
   )}&refresh_token=${encodeURIComponent(refreshToken)}`;
 
   const options = {
-    headers: {git
+    headers: {
       "Content-Type": "application/x-www-form-urlencoded",
       // Include the Authorization header if your app uses a client secret
       Authorization: `Basic ${Buffer.from(

@@ -1,49 +1,85 @@
-const AWS = require("aws-sdk");
+const express = require("express");
+const {
+  DynamoDBClient,
+  PutItemCommand,
+  CreateTableCommand,
+  ScanCommand,
+} = require("@aws-sdk/client-dynamodb");
+const dotenv = require("dotenv");
 
-// Configure AWS SDK
-AWS.config.update({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+// Load environment variables from .env file
+dotenv.config();
+
+// DynamoDB Client Configuration
+const config = {
   region: "us-east-1",
-});
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
+};
 
-const dynamoDb = new AWS.DynamoDB.DocumentClient();
-
-const TableName = "room";
-const professorId = 2;
+const dynamoDb = new DynamoDBClient(config);
 
 async function createRoom(roomName) {
-  const roomId = generateRoomId(); // Implement this function based on your ID generation logic
-  const params = {
-    TableName,
+  console.log("tyjgh");
+  // const { roomName, professorId } = req.body;
+  const professorId = 2;
+  const roomId = generateRoomId();
+  const input = {
+    TableName: "room",
     Item: {
-      roomId,
-      professorId,
-      roomName,
+      roomId: { S: roomId },
+      professorId: { N: String(professorId) },
+      roomName: { S: roomName },
     },
   };
 
-  dynamoDb.put(params, function (err, data) {
-    if (err) {
-      console.log("Error", err);
-    } else {
-      console.log("Success");
+  const roomExists = await checkIfRoomExists(roomName);
+  if (roomExists) {
+    console.log("pp");
+    const command = new PutItemCommand(input);
+    try {
+      // const res = await dynamoDb.send(command);
+      // console.log(res);
+      if (await dynamoDb.send(command)) {
+        console.log("Room created" + roomId);
+        createTable(roomId);
+        return {
+          success: true,
+          message: "Room created successfully.",
+          roomId: roomId,
+        };
+      } else {
+        console.log("Room createion failed");
+      }
+    } catch (error) {
+      console.error("Error creating room:", error);
+      return { success: false, message: "Failed to create room." };
     }
-  });
-  return roomId;
+  } else {
+    console.log("room exists");
+    return { success: false, message: "Failed to create room." };
+  }
 }
 
-async function checkRoomExists(roomId) {
+async function checkIfRoomExists(roomName) {
+  /*Scannning if the new room name already exists or not */
+  console.log("room name is " + roomName);
   const params = {
-    TableName: "room", // Replace with your DynamoDB table name
-    Key: {
-      roomId: roomId,
+    TableName: "room",
+    FilterExpression: "roomName = :roomName",
+    ExpressionAttributeValues: {
+      ":roomName": { S: roomName },
     },
   };
 
   try {
-    const result = await dynamoDb.get(params).promise();
-    return result.Item !== undefined; // Returns true if room exists, false otherwise
+    const command = new ScanCommand(params);
+    const result = await dynamoDb.send(command);
+    console.log(result); //pending
+
+    return result.Count == 0; // Simplified return
   } catch (error) {
     console.error("Error checking room existence:", error);
     throw error; // Rethrow to handle it in the calling function
@@ -56,4 +92,41 @@ function generateRoomId() {
   return Math.random().toString(36).substring(2, 15);
 }
 
-module.exports = { createRoom, checkRoomExists };
+async function createTable(roomId) {
+  const input = {
+    TableName: "Quiz_questions_" + roomId, // Assuming roomId is a variable containing the room ID
+    AttributeDefinitions: [
+      {
+        AttributeName: "quiz_number",
+        AttributeType: "S", // S = String, defining quiz_number as a String type for the partition key
+      },
+      {
+        AttributeName: "question_number",
+        AttributeType: "S", // S = String, defining question_number as a String type for the sort key
+      },
+      // Add other attribute definitions here if needed
+    ],
+    KeySchema: [
+      {
+        AttributeName: "quiz_number",
+        KeyType: "HASH", // HASH = partition key
+      },
+      {
+        AttributeName: "question_number",
+        KeyType: "RANGE", // RANGE = sort key
+      },
+    ],
+    BillingMode: "PAY_PER_REQUEST",
+  };
+
+  try {
+    const command = new CreateTableCommand(input);
+    const response = await dynamoDb.send(command);
+    console.log("Table created successfully:", response);
+  } catch (error) {
+    console.error("Error creating table:", error);
+    throw error;
+  }
+}
+
+module.exports = { createRoom, checkIfRoomExists, createTable };

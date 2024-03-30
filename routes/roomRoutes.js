@@ -9,16 +9,20 @@ const router = express.Router();
 // POST /api/rooms/create
 router.post("/create", async (req, res) => {
   try {
-    console.log("two");
     const roomName = req.body.roomName;
     if (!roomName) {
       return res.status(400).send({ message: "Room name is required" });
     }
-    const roomId = await createRoom(roomName);
-    res.json({ roomId });
+    const response = await createRoom(roomName);
+    if(response.success){
+      res.json(response.roomId);
+    }else{
+      res.status(404)
+      res.json("Failed Room Creation! try again Later")
+    }
   } catch (error) {
     console.error("Failed to create room:", error);
-    res.status(500).send({ message: "Failed to create room" });
+    res.json(error).sendStatus(400);
   }
 });
 
@@ -27,9 +31,7 @@ router.post("/join", async (req, res) => {
   try {
     const exists = await checkRoomExists(roomId);
     if (exists) {
-      // Implement your logic for a successful join here
-      // For example, you might add the user to a list of participants in the room
-      res.json({ message: "Successfully joined room." });
+      res.json("Successfully joined room." );
     } else {
       res.status(404).json({ message: "Room does not exist." });
     }
