@@ -37,7 +37,6 @@ async function createRoom(roomName,userEmail) {
 
   const roomExists = await checkRoomIfExists({ roomName: roomName });
   if (roomExists) {
-    
     const command = new PutItemCommand(input);
     try {
       // const res = await dynamoDb.send(command);
@@ -45,13 +44,14 @@ async function createRoom(roomName,userEmail) {
       if (await dynamoDb.send(command)) {
         console.log("Room created" + roomId);
         createTable(roomId);
+        createQuizSubmissionDetailsTable(roomId);
         return {
           success: true,
           message: "Room created successfully.",
           roomId: roomId,
         };
       } else {
-        console.log("Room createion failed");
+        console.log("Room creation failed");
       }
     } catch (error) {
       console.error("Error creating room:", error);
@@ -140,6 +140,42 @@ async function createTable(roomId) {
     console.log("Table created successfully:", response);
   } catch (error) {
     console.error("Error creating table:", error);
+    throw error;
+  }
+}
+
+async function createQuizSubmissionDetailsTable(roomId) {
+  const input = {
+    TableName: "quiz_submission_details_" + roomId, // Assuming roomId is a variable containing the room ID
+    AttributeDefinitions: [
+      {
+        AttributeName: "quiz_number",
+        AttributeType: "N", 
+      },
+      {
+        AttributeName: "user_id",
+        AttributeType: "S", 
+      }
+    ],
+    KeySchema: [
+      {
+        AttributeName: "quiz_number",
+        KeyType: "HASH", 
+      },
+      {
+        AttributeName: "user_id",
+        KeyType: "RANGE", 
+      }
+    ],
+    BillingMode: "PAY_PER_REQUEST",
+  };
+
+  try {
+    const command = new CreateTableCommand(input);
+    const response = await dynamoDb.send(command);
+    console.log("Table quiz_submission_details_ created successfully: ", response);
+  } catch (error) {
+    console.error("Error creating quiz_submission_details_ table:", error);
     throw error;
   }
 }
