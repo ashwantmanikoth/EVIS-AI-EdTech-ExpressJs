@@ -2,6 +2,7 @@ require("dotenv").config(); // This is the correct way to initialize dotenv in a
 
 const multer = require("multer");
 const roomRoutes = require("./routes/roomRoutes");
+const quizRoutes = require("./routes/quizRoutes");
 const authRoutes = require("./routes/authRoutes");
 const {
   fetchCognitoUserDetails,
@@ -300,6 +301,8 @@ app.post("/api/auth/professor/exchange", async (req, res) => {
 
 // Register the room routes
 app.use("/room", roomRoutes);
+
+app.use("/quiz", quizRoutes);
 
 app.use("/api/auth", authRoutes);
 
