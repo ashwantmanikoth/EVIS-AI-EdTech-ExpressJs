@@ -30,8 +30,8 @@ async function checkIfAlreadySubmitted(submissionDetails) {
     TableName: "quiz_submission_details_" + roomId,
     KeyConditionExpression: "quiz_number = :qn AND user_id = :uid",
     ExpressionAttributeValues: {
-      ":qn": { N: quizNumber.toString() }, 
-      ":uid": { S: userId }  
+      ":qn": { N: quizNumber.toString() },
+      ":uid": { S: userId }
     }
   };
 
@@ -116,7 +116,7 @@ async function submitAnswer(submissionDetails) {
         const submissionResponse = await saveSubmission(submissionDetails);
         return submissionResponse;
 
-      } else  {
+      } else {
 
         return {
           "isSuccess": false,
@@ -124,7 +124,7 @@ async function submitAnswer(submissionDetails) {
         }
 
       }
-    } 
+    }
   }
 }
 
@@ -168,9 +168,10 @@ async function savePerformanceInsights(quizDetails) {
   if (typeof quizDetails === "object" && quizDetails.hasOwnProperty("roomId")) {
 
     const submissionDetails = await fetchQuizSubmissions(quizDetails);
+    console.log("savePerformanceInsights submissionDetails:", submissionDetails);
 
-    if (typeof submissionDetails === "object" && submissionDetails.hasOwnProperty("averageScore") 
-        && submissionDetails.hasOwnProperty("submissionCount")) {
+    if (typeof submissionDetails === "object" && submissionDetails.hasOwnProperty("averageScore")
+      && submissionDetails.hasOwnProperty("submissionCount")) {
 
       quizDetails['averageScore'] = submissionDetails['averageScore'];
       quizDetails['submissionCount'] = submissionDetails['submissionCount'];
@@ -178,7 +179,7 @@ async function savePerformanceInsights(quizDetails) {
       const dbResponse = await saveQuizInsightsToDB(quizDetails);
       return dbResponse;
 
-    } else  {
+    } else {
 
       return {
         "isSuccess": false,
@@ -192,38 +193,44 @@ async function savePerformanceInsights(quizDetails) {
 async function fetchQuizSubmissions(quizDetails) {
   console.log("fetchQuizSubmissions", quizDetails);
   try {
-      const params = {
-          TableName: 'quiz_submission_details_' + quizDetails["roomId"], 
-          KeyConditionExpression: "quiz_number = :qn",
-          ExpressionAttributeValues: {
-              ":qn": { N: quizDetails["quizNumber"].toString() } 
-          }
-      };
-
-      const quizSubmissionQueryCommand = new QueryCommand(params);
-      const quizSubmissionDetails = await dynamoDb.send(quizSubmissionQueryCommand);
-
-      const submissionCount = quizSubmissionDetails.Items.length;
-
-      let totalScore = 0;
-      quizSubmissionDetails.Items.forEach((item) => {
-          totalScore += parseInt(item.score.N);
-      });
-      const averageScore = totalScore / submissionCount;
-
-      return {
-        averageScore,
-        submissionCount
+    const params = {
+      TableName: 'quiz_submission_details_' + quizDetails["roomId"],
+      KeyConditionExpression: "quiz_number = :qn",
+      ExpressionAttributeValues: {
+        ":qn": { N: quizDetails["quizNumber"].toString() }
       }
-  } catch (error) {
-    console.error("Error fetching quiz submission details:", error);
-    throw error;
-  }
+    };
+
+    const quizSubmissionQueryCommand = new QueryCommand(params);
+    const quizSubmissionDetails = await dynamoDb.send(quizSubmissionQueryCommand);
+    console.log("fetchQuizSubmissions quizSubmissionDetails:", quizSubmissionDetails);
+
+    const submissionCount = quizSubmissionDetails.Items.length;
+
+    let totalScore = 0;
+    let averageScore = 0;
+
+    if (submissionCount > 0) {
+      quizSubmissionDetails.Items.forEach((item) => {
+        totalScore += parseInt(item.score.N);
+      });
+      averageScore = totalScore / submissionCount;
+    }
+
+    return {
+      averageScore,
+      submissionCount
+    }
+} catch (error) {
+  console.error("Error fetching quiz submission details:", error);
+  throw error;
+}
 
 }
 
 async function saveQuizInsightsToDB(quizDetails) {
 
+  console.log("saveQuizInsightsToDB :", quizDetails);
   const roomId = quizDetails.roomId;
   const quizNumber = quizDetails.quizNumber;
   const topic = quizDetails.topic;
@@ -244,7 +251,7 @@ async function saveQuizInsightsToDB(quizDetails) {
 
     const putCommand = new PutItemCommand(params);
     const putCommandResult = await dynamoDb.send(putCommand);
-    console.log("putCommandResult", putCommandResult); 
+    console.log("putCommandResult", putCommandResult);
     return {
       "isSuccess": true
     }
