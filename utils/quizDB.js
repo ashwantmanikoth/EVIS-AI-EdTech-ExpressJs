@@ -162,4 +162,96 @@ async function saveSubmission(submissionDetails) {
   }
 }
 
-module.exports = { submitAnswer, checkIfAlreadySubmitted, calculateScore, saveSubmission };
+async function savePerformanceInsights(quizDetails) {
+  console.log("savePerformanceInsights", quizDetails);
+
+  if (typeof quizDetails === "object" && quizDetails.hasOwnProperty("roomId")) {
+
+    const submissionDetails = await fetchQuizSubmissions(quizDetails);
+
+    if (typeof submissionDetails === "object" && submissionDetails.hasOwnProperty("averageScore") 
+        && submissionDetails.hasOwnProperty("submissionCount")) {
+
+      quizDetails['averageScore'] = submissionDetails['averageScore'];
+      quizDetails['submissionCount'] = submissionDetails['submissionCount'];
+
+      const dbResponse = await saveQuizInsightsToDB(quizDetails);
+      return dbResponse;
+
+    } else  {
+
+      return {
+        "isSuccess": false,
+        "errMsg": "Save performance insights failed - errror in calculating the avg score / total submissions count."
+      }
+
+    }
+  }
+}
+
+async function fetchQuizSubmissions(quizDetails) {
+  console.log("fetchQuizSubmissions", quizDetails);
+  try {
+      const params = {
+          TableName: 'quiz_submission_details_' + quizDetails["roomId"], 
+          KeyConditionExpression: "quiz_number = :qn",
+          ExpressionAttributeValues: {
+              ":qn": { N: quizDetails["quizNumber"].toString() } 
+          }
+      };
+
+      const quizSubmissionQueryCommand = new QueryCommand(params);
+      const quizSubmissionDetails = await dynamoDb.send(quizSubmissionQueryCommand);
+
+      const submissionCount = quizSubmissionDetails.Items.length;
+
+      let totalScore = 0;
+      quizSubmissionDetails.Items.forEach((item) => {
+          totalScore += parseInt(item.score.N);
+      });
+      const averageScore = totalScore / submissionCount;
+
+      return {
+        averageScore,
+        submissionCount
+      }
+  } catch (error) {
+    console.error("Error fetching quiz submission details:", error);
+    throw error;
+  }
+
+}
+
+async function saveQuizInsightsToDB(quizDetails) {
+
+  const roomId = quizDetails.roomId;
+  const quizNumber = quizDetails.quizNumber;
+  const topic = quizDetails.topic;
+  const averageScore = quizDetails.averageScore;
+  const submissionCount = quizDetails.submissionCount;
+
+  try {
+    const params = {
+      TableName: "quiz_performance_insigths",
+      Item: {
+        "room_id": { S: roomId },
+        "quiz_number": { N: quizNumber.toString() },
+        "topic": { S: topic },
+        "avg_score": { N: averageScore.toString() },
+        "submission_count": { N: submissionCount.toString() }
+      }
+    };
+
+    const putCommand = new PutItemCommand(params);
+    const putCommandResult = await dynamoDb.send(putCommand);
+    console.log("putCommandResult", putCommandResult); 
+    return {
+      "isSuccess": true
+    }
+  } catch (error) {
+    console.error("Error saving performance insights in DB:", error);
+    throw error;
+  }
+}
+
+module.exports = { submitAnswer, savePerformanceInsights };

@@ -2,7 +2,7 @@
 
 const express = require("express");
 
-const { submitAnswer } = require("../utils/quizDB");
+const { submitAnswer, savePerformanceInsights } = require("../utils/quizDB");
 
 const router = express.Router();
 
@@ -21,5 +21,21 @@ router.post("/submitAnswer", async (req, res) => {
       res.status(500).json({ message: "Failed to submit answer." });
     }
   });
+
+  router.post("/savePerformanceInsights", async (req, res) => {
+      console.log("savePerformanceInsights route: ", req)
+      try {
+        const performanceInsightsResponse = await savePerformanceInsights(req.body);
+        console.log(performanceInsightsResponse)
+        if (performanceInsightsResponse.isSuccess) {
+          res.status(200).json({"message": "Saved the quiz performance insights successfully"});
+        } else {
+          res.status(400).json({ message: performanceInsightsResponse.errMsg});
+        }
+      } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Failed to save the quiz performance insights." });
+      }
+    });
 
 module.exports = router;
