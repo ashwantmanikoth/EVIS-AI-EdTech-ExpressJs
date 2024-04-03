@@ -1,6 +1,14 @@
-const express = require('express');
-const { fetchCognitoUserDetails, fetchCognitoProfessorDetails, refreshAccessToken, globalSignOutUser } = require('../utils/CognitoService');
-const { use } = require('./roomRoutes');
+const express = require("express");
+const {
+  fetchCognitoUserDetails,
+  fetchCognitoProfessorDetails,
+  refreshAccessToken,
+} = require("../utils/CognitoService");
+const { use } = require("./roomRoutes");
+const {
+  CognitoIdentityProviderClient,
+  GlobalSignOutCommand,
+} = require("@aws-sdk/client-cognito-identity-provider");
 
 const router = express.Router();
 
@@ -38,39 +46,38 @@ router.post("/refresh-token", async (req, res) => {
   }
 });
 
-// const { CognitoIdentityProviderClient, GlobalSignOutCommand } = require("@aws-sdk/client-cognito-identity-provider");
-
 // // Initialize the CognitoIdentityProviderClient with configuration
 // const client = new CognitoIdentityProviderClient({
 //   region: "us-east-1", // Example region, replace with your actual region
 //   // Add any other configuration needed
 // });
 
-// router.post("/signout", async (req, res) => {
-//   try {
-//     console.log("hh")
-//     const { accessToken } = req.body;
-// // console.log(accessToken)
-//     if (!accessToken) {
-//       return res.status(400).send({ message: "Access token is required." });
-//     }
+router.post("/signout", async (req, res) => {
+  const config = {
+    region: "us-east-1",
+  }
+  const client = new CognitoIdentityProviderClient(config);
+  try {
+    console.log("hh");
+    const { accessToken } = req.body;
+    if (!accessToken) {
+      return res.status(400).send({ message: "Access token is required." });
+    }
+    // Preparing the input for the GlobalSignOutCommand
+    const input = {
+      region: "us-east-1",
+      AccessToken: accessToken, // The access token obtained from the client
+    };
+    // Creating and sending the GlobalSignOutCommand
+    const command = new GlobalSignOutCommand(input);
+    const response = await client.send(command);
 
-//     // Preparing the input for the GlobalSignOutCommand
-//     const input = {
-//       AccessToken: accessToken, // The access token obtained from the client
-//     };
-
-//     // Creating and sending the GlobalSignOutCommand
-//     const command = new GlobalSignOutCommand(input);
-//     const response = await client.send(command);
-//     console.log(response)
-
-//     // If the command was successful, send an appropriate response
-//     res.send({ message: "Successfully signed out." });
-//   } catch (error) {
-//     console.error("Logout error:", error); 
-//     res.status(500).send({ message: "Failed to fetch user details" });
-//   }
-// });
+    // If the command was successful, send an appropriate response
+    res.send({ message: "Successfully signed out." });
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).send({ message: "Failed to fetch user details" });
+  }
+});
 
 module.exports = router;
