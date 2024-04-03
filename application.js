@@ -78,9 +78,9 @@ app.post("/analyze-text", (req, res) => {
 //
 //
 //
-app.post("/upload", validateToken, upload.single("file"), async (req, res) => {
+app.post("/upload", upload.single("file"), async (req, res) => {
   //todo need to send auth token from client side in headers
-  console.log("hereee");
+  
   try {
     if (!req.file) {
       return res.status(400).send({ message: "No file uploaded" });
@@ -101,7 +101,7 @@ app.post("/upload", validateToken, upload.single("file"), async (req, res) => {
 
     // Optionally, delete the file after uploading to S3
     fs.unlinkSync(file.path);
-
+    console.log("uploadded successfully");
     res.send({ message: "File uploaded successfully" });
   } catch (error) {
     console.error("Upload error:", error);
