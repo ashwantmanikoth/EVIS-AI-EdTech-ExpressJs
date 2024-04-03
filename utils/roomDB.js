@@ -5,11 +5,12 @@ const {
   GetItemCommand,
   CreateTableCommand,
   ScanCommand,
+  DeleteItemCommand,
 } = require("@aws-sdk/client-dynamodb");
 const dotenv = require("dotenv");
 
 // Load environment variables from .env file
-dotenv.config(); 
+dotenv.config();
 
 // DynamoDB Client Configuration
 const config = {
@@ -22,7 +23,7 @@ const config = {
 
 const dynamoDb = new DynamoDBClient(config);
 
-async function createRoom(roomName,userEmail) {
+async function createRoom(roomName, userEmail) {
   // const { roomName, professorId } = req.body;
 
   const roomId = generateRoomId();
@@ -63,6 +64,33 @@ async function createRoom(roomName,userEmail) {
   }
 }
 
+async function deleteRoom(roomId) {
+  const input = {
+    TableName: "room",
+    Key: {
+      roomId: {
+        S: roomId,
+      },
+    },
+  };
+
+  const command = new DeleteItemCommand(input);
+  try {
+    if (await dynamoDb.send(command)) {
+      return {
+        success: true,
+        message: "Room deleted successfully.",
+        roomId: roomId,
+      };
+    } else {
+      console.log("Room deleted failed");
+    }
+  } catch (error) {
+    console.error("Error deleting room:", error);
+    return { success: false, message: "Failed to delete room." };
+  }
+}
+
 async function checkRoomIfExists(identifier) {
   console.log("kk");
   /*Scannning if the new room name already exists or not */
@@ -86,7 +114,10 @@ async function checkRoomIfExists(identifier) {
       console.error("Error checking room existence:", error);
       throw error; // Rethrow to handle it in the calling function
     }
-  } else if (typeof identifier === "object" && identifier.hasOwnProperty("roomId")) {
+  } else if (
+    typeof identifier === "object" &&
+    identifier.hasOwnProperty("roomId")
+  ) {
     const roomId = identifier.roomId;
     const params = {
       TableName: "room",
@@ -150,22 +181,22 @@ async function createQuizSubmissionDetailsTable(roomId) {
     AttributeDefinitions: [
       {
         AttributeName: "quiz_number",
-        AttributeType: "N", 
+        AttributeType: "N",
       },
       {
         AttributeName: "user_id",
-        AttributeType: "S", 
-      }
+        AttributeType: "S",
+      },
     ],
     KeySchema: [
       {
         AttributeName: "quiz_number",
-        KeyType: "HASH", 
+        KeyType: "HASH",
       },
       {
         AttributeName: "user_id",
-        KeyType: "RANGE", 
-      }
+        KeyType: "RANGE",
+      },
     ],
     BillingMode: "PAY_PER_REQUEST",
   };
@@ -173,11 +204,14 @@ async function createQuizSubmissionDetailsTable(roomId) {
   try {
     const command = new CreateTableCommand(input);
     const response = await dynamoDb.send(command);
-    console.log("Table quiz_submission_details_ created successfully: ", response);
+    console.log(
+      "Table quiz_submission_details_ created successfully: ",
+      response
+    );
   } catch (error) {
     console.error("Error creating quiz_submission_details_ table:", error);
     throw error;
   }
 }
 
-module.exports = { createRoom, checkRoomIfExists, createTable };
+module.exports = { createRoom, checkRoomIfExists, createTable, deleteRoom };

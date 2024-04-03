@@ -2,7 +2,11 @@
 
 const express = require("express");
 
-const { createRoom, checkRoomIfExists } = require("../utils/roomDB");
+const {
+  createRoom,
+  checkRoomIfExists,
+  deleteRoom,
+} = require("../utils/roomDB");
 
 const router = express.Router();
 
@@ -15,7 +19,28 @@ router.post("/create", async (req, res) => {
     if (!roomName) {
       return res.status(400).send({ message: "Room name is required" });
     }
-    const response = await createRoom(roomName,userEmail);
+    const response = await createRoom(roomName, userEmail);
+    if (response.success) {
+      res.json(response.roomId);
+    } else {
+      res.status(404);
+      res.json("Failed Room Creation! try again Later");
+    }
+  } catch (error) {
+    console.error("Failed to create room:", error);
+    res.json(error).sendStatus(400);
+  }
+});
+
+router.post("/delete", async (req, res) => {
+  try {
+    const roomId = req.body.roomId;
+
+    if (!roomId) {
+      return res.status(400).send({ message: "Room name is required" });
+    }
+    const response = await deleteRoom(roomId);
+    console.log(response);
     if (response.success) {
       res.json(response.roomId);
     } else {
@@ -32,9 +57,9 @@ router.post("/join", async (req, res) => {
   const { roomId } = req.body;
   try {
     const exists = await checkRoomIfExists({ roomId: roomId });
-    console.log(exists)
+    console.log(exists);
     if (exists) {
-      res.json({"roomName": exists});
+      res.json({ roomName: exists });
     } else {
       console.log("dd");
       res.status(404).json({ message: "Room does not exist." });
