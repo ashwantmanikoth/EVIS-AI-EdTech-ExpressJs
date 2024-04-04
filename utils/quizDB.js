@@ -1,14 +1,20 @@
 const express = require("express");
+require("dotenv").config(); // This is the correct way to initialize dotenv in a CommonJS module
+
 const {
   DynamoDBClient,
   PutItemCommand,
   GetItemCommand,
   QueryCommand,
 } = require("@aws-sdk/client-dynamodb");
+
+const { PutObjectCommand, S3Client } = require("@aws-sdk/client-s3");
+
 const dotenv = require("dotenv");
 
 // Load environment variables from .env file
 dotenv.config();
+
 
 // DynamoDB Client Configuration
 const config = {
@@ -31,8 +37,8 @@ async function checkIfAlreadySubmitted(submissionDetails) {
     KeyConditionExpression: "quiz_number = :qn AND user_id = :uid",
     ExpressionAttributeValues: {
       ":qn": { N: quizNumber.toString() },
-      ":uid": { S: userId }
-    }
+      ":uid": { S: userId },
+    },
   };
 
   try {
@@ -51,17 +57,16 @@ async function checkIfAlreadySubmitted(submissionDetails) {
 }
 
 async function calculateScore(submissionDetails) {
-
   const roomId = submissionDetails.roomId;
   const quizNumber = submissionDetails.quizNumber;
   const selectedAnswers = submissionDetails.selectedAnswers;
 
   const params = {
-    TableName: 'quiz_questions_' + roomId,
+    TableName: "quiz_questions_" + roomId,
     KeyConditionExpression: "quiz_number = :qn",
     ExpressionAttributeValues: {
-      ":qn": { N: quizNumber.toString() }
-    }
+      ":qn": { N: quizNumber.toString() },
+    },
   };
 
   try {
@@ -72,9 +77,11 @@ async function calculateScore(submissionDetails) {
 
     let numberOfCorrectAnswers = 0;
     selectedAnswers.forEach((selectedAnswer, index) => {
-
       console.log("quiz ques item", queryQuizAnswersResult.Items[index]);
-      if (selectedAnswer === parseInt(queryQuizAnswersResult.Items[index].correct_option.N)) {
+      if (
+        selectedAnswer ===
+        parseInt(queryQuizAnswersResult.Items[index].correct_option.N)
+      ) {
         numberOfCorrectAnswers++;
       }
     });
@@ -84,8 +91,6 @@ async function calculateScore(submissionDetails) {
     const score = (numberOfCorrectAnswers / selectedAnswers.length) * 100;
     console.log("Score:", numberOfCorrectAnswers);
     return score;
-
-
   } catch (error) {
     console.error("Error fetching answers:", error);
     return -1;
@@ -95,34 +100,29 @@ async function calculateScore(submissionDetails) {
 async function submitAnswer(submissionDetails) {
   console.log("submitAnswer", submissionDetails);
 
-  if (typeof submissionDetails === "object" && submissionDetails.hasOwnProperty("roomId")) {
-
+  if (
+    typeof submissionDetails === "object" &&
+    submissionDetails.hasOwnProperty("roomId")
+  ) {
     // check if submission exists
     const alreadySubmitted = await checkIfAlreadySubmitted(submissionDetails);
 
     if (alreadySubmitted) {
-
       return {
-        "isSuccess": false,
-        "errMsg": "Can't submit - already submitted."
-      }
-
+        isSuccess: false,
+        errMsg: "Can't submit - already submitted.",
+      };
     } else {
-
       const score = await calculateScore(submissionDetails);
       if (score != -1) {
-
-        submissionDetails['score'] = score;
+        submissionDetails["score"] = score;
         const submissionResponse = await saveSubmission(submissionDetails);
         return submissionResponse;
-
       } else {
-
         return {
-          "isSuccess": false,
-          "errMsg": "Submission failed - errror in calculating the score."
-        }
-
+          isSuccess: false,
+          errMsg: "Submission failed - errror in calculating the score.",
+        };
       }
     }
   }
@@ -138,24 +138,26 @@ async function saveSubmission(submissionDetails) {
   const score = submissionDetails.score;
 
   try {
-    const submittedAnswers = selectedAnswers.map(num => ({ N: num.toString() }));
+    const submittedAnswers = selectedAnswers.map((num) => ({
+      N: num.toString(),
+    }));
     const params = {
       TableName: "quiz_submission_details_" + roomId,
       Item: {
-        "quiz_number": { N: quizNumber.toString() },
-        "user_id": { S: userId },
-        "topic": { S: topic },
-        "answers_submitted": { L: submittedAnswers },
-        "score": { N: score.toString() }
-      }
+        quiz_number: { N: quizNumber.toString() },
+        user_id: { S: userId },
+        topic: { S: topic },
+        answers_submitted: { L: submittedAnswers },
+        score: { N: score.toString() },
+      },
     };
 
     const putCommand = new PutItemCommand(params);
     const putCommandResult = await dynamoDb.send(putCommand);
     console.log("putCommandResult", putCommandResult); //pending
     return {
-      "isSuccess": true
-    }
+      isSuccess: true,
+    };
   } catch (error) {
     console.error("Error checking if submission was already made:", error);
     throw error;
@@ -194,16 +196,21 @@ async function fetchQuizSubmissions(quizDetails) {
   console.log("fetchQuizSubmissions", quizDetails);
   try {
     const params = {
-      TableName: 'quiz_submission_details_' + quizDetails["roomId"],
+      TableName: "quiz_submission_details_" + quizDetails["roomId"],
       KeyConditionExpression: "quiz_number = :qn",
       ExpressionAttributeValues: {
-        ":qn": { N: quizDetails["quizNumber"].toString() }
-      }
+        ":qn": { N: quizDetails["quizNumber"].toString() },
+      },
     };
 
     const quizSubmissionQueryCommand = new QueryCommand(params);
-    const quizSubmissionDetails = await dynamoDb.send(quizSubmissionQueryCommand);
-    console.log("fetchQuizSubmissions quizSubmissionDetails:", quizSubmissionDetails);
+    const quizSubmissionDetails = await dynamoDb.send(
+      quizSubmissionQueryCommand
+    );
+    console.log(
+      "fetchQuizSubmissions quizSubmissionDetails:",
+      quizSubmissionDetails
+    );
 
     const submissionCount = quizSubmissionDetails.Items.length;
 
@@ -219,17 +226,15 @@ async function fetchQuizSubmissions(quizDetails) {
 
     return {
       averageScore,
-      submissionCount
-    }
-} catch (error) {
-  console.error("Error fetching quiz submission details:", error);
-  throw error;
-}
-
+      submissionCount,
+    };
+  } catch (error) {
+    console.error("Error fetching quiz submission details:", error);
+    throw error;
+  }
 }
 
 async function saveQuizInsightsToDB(quizDetails) {
-
   console.log("saveQuizInsightsToDB :", quizDetails);
   const roomId = quizDetails.roomId;
   const quizNumber = quizDetails.quizNumber;
@@ -241,20 +246,20 @@ async function saveQuizInsightsToDB(quizDetails) {
     const params = {
       TableName: "quiz_performance_insigths",
       Item: {
-        "room_id": { S: roomId },
-        "quiz_number": { N: quizNumber.toString() },
-        "topic": { S: topic },
-        "avg_score": { N: averageScore.toString() },
-        "submission_count": { N: submissionCount.toString() }
-      }
+        room_id: { S: roomId },
+        quiz_number: { N: quizNumber.toString() },
+        topic: { S: topic },
+        avg_score: { N: averageScore.toString() },
+        submission_count: { N: submissionCount.toString() },
+      },
     };
 
     const putCommand = new PutItemCommand(params);
     const putCommandResult = await dynamoDb.send(putCommand);
     console.log("putCommandResult", putCommandResult);
     return {
-      "isSuccess": true
-    }
+      isSuccess: true,
+    };
   } catch (error) {
     console.error("Error saving performance insights in DB:", error);
     throw error;

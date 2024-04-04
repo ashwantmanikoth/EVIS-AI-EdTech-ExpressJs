@@ -4,6 +4,8 @@ const multer = require("multer");
 const roomRoutes = require("./routes/roomRoutes");
 const quizRoutes = require("./routes/quizRoutes");
 const authRoutes = require("./routes/authRoutes");
+const functionalRoutes = require("./routes/functionalRoutes");
+
 const {
   fetchCognitoUserDetails,
   fetchCognitoProfessorDetails,
@@ -24,7 +26,6 @@ const {
   GetDocumentTextDetectionCommand,
 } = require("@aws-sdk/client-textract");
 
-const fs = require("fs");
 
 const express = require("express");
 const AWS = require("aws-sdk");
@@ -56,31 +57,29 @@ const comprehend = new AWS.Comprehend();
 const s3 = new S3Client({ region: region }); // Replace 'your-region' with your S3 bucket region
 const textract = new TextractClient({ region: region });
 
-app.post("/analyze-text", (req, res) => {
-  const { text } = req.body;
-  console.log(text);
-  var params = {
-    LanguageCode: "en",
-    Text: text,
-  };
+// app.post("/analyze-text", (req, res) => {
+//   const { text } = req.body;
+//   console.log(text);
+//   var params = {
+//     LanguageCode: "en",
+//     Text: text,
+//   };
 
-  comprehend.detectKeyPhrases(params, function (err, data) {
-    if (err) {
-      console.log(err, err.stack);
-      res.send({ error: "Error processing your request" });
-    } else {
-      res.send(data);
-    }
-  });
-});
+//   comprehend.detectKeyPhrases(params, function (err, data) {
+//     if (err) {
+//       console.log(err, err.stack);
+//       res.send({ error: "Error processing your request" });
+//     } else {
+//       res.send(data);
+//     }
+//   });
+// });
 
-//
-//
-//
-//
+app.use("/analyzeText", functionalRoutes);
+
 app.post("/upload", upload.single("file"), async (req, res) => {
   //todo need to send auth token from client side in headers
-  
+  console.log("test1");
   try {
     if (!req.file) {
       return res.status(400).send({ message: "No file uploaded" });
@@ -99,9 +98,6 @@ app.post("/upload", upload.single("file"), async (req, res) => {
 
     await s3.send(command);
 
-    // Optionally, delete the file after uploading to S3
-    fs.unlinkSync(file.path);
-    console.log("uploadded successfully");
     res.send({ message: "File uploaded successfully" });
   } catch (error) {
     console.error("Upload error:", error);
@@ -110,7 +106,6 @@ app.post("/upload", upload.single("file"), async (req, res) => {
 });
 
 app.get("/extract", async (req, res) => {
-  console.log("koi");
   try {
     // List objects in the bucket
     const { Contents } = await s3.send(
@@ -150,6 +145,9 @@ app.get("/extract", async (req, res) => {
         const response = await textract.send(command);
         if (response.JobStatus === "SUCCEEDED") {
           console.log("Text detection job succeeded.");
+          console.log(response);
+          const jsonResponse = JSON.stringify(response);
+
           return response; // Return or process response here
         } else if (response.JobStatus === "FAILED") {
           throw new Error(
@@ -241,7 +239,7 @@ app.post("/api/auth/exchange", async (req, res) => {
 
 //Professor signup
 app.post("/api/auth/professor/exchange", async (req, res) => {
-  console.log("kooo")
+  console.log("kooo");
   const { code } = req.body;
   console.log(code);
   const clientId = process.env.COGNITO_CLIENT_ID_PROFESSOR;
@@ -290,7 +288,6 @@ app.post("/api/auth/professor/exchange", async (req, res) => {
       expiresIn: response.data.expires_in,
       refreshToken: response.data.refresh_token,
     });
-
   } catch (error) {
     console.error(
       "Error exchanging code for tokens:",
