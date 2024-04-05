@@ -46,6 +46,7 @@ async function createRoom(roomName, userEmail) {
         console.log("Room created" + roomId);
         createTable(roomId);
         createQuizSubmissionDetailsTable(roomId);
+        createFeedbackTable(roomId);
         return {
           success: true,
           message: "Room created successfully.",
@@ -210,6 +211,45 @@ async function createQuizSubmissionDetailsTable(roomId) {
     );
   } catch (error) {
     console.error("Error creating quiz_submission_details_ table:", error);
+    throw error;
+  }
+}
+
+async function createFeedbackTable(roomId) {
+  const input = {
+    TableName: "feedback_details_" + roomId, // Assuming roomId is a variable containing the room ID
+    AttributeDefinitions: [
+      {
+        AttributeName: "session_id",
+        AttributeType: "N",
+      },
+      {
+        AttributeName: "user_id",
+        AttributeType: "S",
+      },
+    ],
+    KeySchema: [
+      {
+        AttributeName: "session_id",
+        KeyType: "HASH",
+      },
+      {
+        AttributeName: "user_id",
+        KeyType: "RANGE",
+      },
+    ],
+    BillingMode: "PAY_PER_REQUEST",
+  };
+
+  try {
+    const command = new CreateTableCommand(input);
+    const response = await dynamoDb.send(command);
+    console.log(
+      "Table feedback_details_ created successfully: ",
+      response
+    );
+  } catch (error) {
+    console.error("Error creating feedback_details_ table:", error);
     throw error;
   }
 }
