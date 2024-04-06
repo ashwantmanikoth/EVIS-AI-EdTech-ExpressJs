@@ -48,11 +48,12 @@ async function uploadFileToS3(bucketName, file) {
 }
 
 async function getObjectFromS3(roomId, pageNumber) {
+  console.log("feed")
   const input = {
-    // GetObjectRequest
     Bucket: "evis-storage", // required
     Key: roomId + ".json",
   };
+
   const command = new GetObjectCommand(input);
   const response = await s3.send(command);
 
@@ -80,6 +81,7 @@ async function getObjectFromS3(roomId, pageNumber) {
 
   // Assuming getKeyPhrase and callOpenAi are async functions
   try {
+    console.log("hola")
     const keyPhraseResult = await getKeyPhrase(textOnlyJson); // Process textOnlyJson as needed
     console.log(keyPhraseResult.map(block=>block.Text));
     // console.log(keyPhraseResult.filter(Text))
@@ -223,7 +225,7 @@ async function callOpenAi(json) {
           role: "user",
           content:
             "Based on the given KEY words, Identify the possible 5 questions with well framed question and 4 options with 1 right answer for each question. The words are " +
-            json+" . Return the questions, options and one answer in the following strict json format [{'question': 'What is the capital of France?','options': ['Paris', 'London', 'Berlin', 'Madrid'], 'correct_option': 0 },",
+            json+" . Return the questions, options and one answer in the following strict json format [{'question': 'What is the capital of France?','options': ['Paris', 'London', 'Berlin', 'Madrid'], 'correct_option': 0 , Topic: 'Country'}, ",
         },
       ],
       model: "gpt-3.5-turbo",

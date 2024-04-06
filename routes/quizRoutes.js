@@ -1,4 +1,5 @@
 // quizRoutes.js
+require("dotenv").config(); // This is the correct way to initialize dotenv in a CommonJS module
 
 const express = require("express");
 
@@ -7,9 +8,21 @@ const {
   extractFromS3,
   uploadFileToS3,
   uploadJsonToS3,
-  getKeyPhrase,
-  getObjectFromS3
+  
+  getObjectFromS3,
 } = require("./AWSfunctions");
+
+const { GetItemCommand, DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+
+const config = {
+  region: "us-east-1",
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
+};
+
+const dynamoDb = new DynamoDBClient(config);
 
 const { invokeLambda } = require("../utils/lambdaService");
 
@@ -73,11 +86,10 @@ router.post("/upload", upload.single("file"), async (req, res) => {
   }
 });
 
-router.post("/getQuiz",async(req,res)=>{
-  const response = await getObjectFromS3(req.body.roomId,req.body.pageNumber);
-  console.log(response)
-  if(response){
-    
+router.post("/getQuiz", async (req, res) => {
+  const response = await getObjectFromS3(req.body.roomId, req.body.pageNumber);
+  console.log(response);
+  if (response) {
     res.json(response);
   }
 });
@@ -103,19 +115,16 @@ router.post("/endQuiz", async (req, res) => {
 });
 
 router.post("/startQuiz", async (req, res) => {
+  // console.log("startQuiz route: ", req);
+  console.log("shit")
+  const response = await getObjectFromS3(req.body.roomId, req.body.pageNumber);
 
-  console.log("startQuiz route: ", req);
-  const response = await getObjectFromS3(req.body.roomId,req.body.pageNumber);
-
-
-  
   try {
     req.body["quizQuestions"] = JSON.parse(response);
-    console.log("tutu", req.body.quizQuestions);
 
     const startQuizResponse = await invokeLambda(
       "save_quiz_questions",
-      req.body,
+      req.body
     );
     console.log("startQuizResponse", startQuizResponse);
 
@@ -141,12 +150,33 @@ router.post("/savePerformanceInsights", async (req, res) => {
         .json({ message: "Saved the quiz performance insights successfully" });
     } else {
       res.status(400).json({ message: performanceInsightsResponse.errMsg });
-    }
+    } //note the question
   } catch (error) {
     console.log(error);
     res
       .status(500)
       .json({ message: "Failed to save the quiz performance insights." });
+  }
+});
+
+router.post("/getInsight", async (req, res) => {
+  try {
+    // console.log(req.body);
+    const roomId = req.body.roomId;
+    console.log(roomId);
+    const params = {
+      TableName: "quiz_performance_insigths",
+      Key: {
+        room_id:  {S:"tkrvmzwcua" },
+        // quiz_number: { N: "1" }, //quiz number currently hard coded, currently only 1 quiz can be used.
+      },
+    };
+    const getCommad = new GetItemCommand(params);
+    const result = await dynamoDb.send(getCommad);
+
+    console.log("sulu" + JSON.stringify(result));
+  } catch (error) {
+    console.log(error)
   }
 });
 

@@ -37,6 +37,7 @@ async function createRoom(roomName, userEmail) {
   };
 
   const roomExists = await checkRoomIfExists({ roomName: roomName });
+  console.log("checkd")
   if (roomExists) {
     const command = new PutItemCommand(input);
     try {
