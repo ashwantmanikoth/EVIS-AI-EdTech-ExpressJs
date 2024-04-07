@@ -19,12 +19,27 @@ const {
   GetDocumentTextDetectionCommand,
 } = require("@aws-sdk/client-textract");
 
+const {
+  DynamoDBClient,
+  PutItemCommand,
+  GetItemCommand,
+  QueryCommand,
+} = require("@aws-sdk/client-dynamodb");
+
 const OpenAI = require("openai");
 const region = "us-east-1";
 const s3 = new S3Client({ region: region }); // Replace 'your-region' with your S3 bucket region
 const textract = new TextractClient({ region: region });
 const fs = require("fs");
-const { block } = require("sharp");
+
+// DynamoDB Client Configuration
+const config = {
+  region: "us-east-1",
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
+};
 
 async function uploadFileToS3(bucketName, file) {
   try {
@@ -48,7 +63,7 @@ async function uploadFileToS3(bucketName, file) {
 }
 
 async function getObjectFromS3(roomId, pageNumber) {
-  console.log("feed")
+  console.log("feed");
   const input = {
     Bucket: "evis-storage", // required
     Key: roomId + ".json",
@@ -74,18 +89,18 @@ async function getObjectFromS3(roomId, pageNumber) {
 
   // Once the stream is fully read and the Promise resolved, parse the JSON
   const jsonData = JSON.parse(data);
-  const filteredData = jsonData.filter((block) => block.page <= pageNumber ); // keywords until the pageNumber
+  const filteredData = jsonData.filter((block) => block.page <= pageNumber); // keywords until the pageNumber
   const textOnlyArray = filteredData.map((block) => block.text);
 
   const textOnlyJson = JSON.stringify(textOnlyArray);
 
   // Assuming getKeyPhrase and callOpenAi are async functions
   try {
-    console.log("hola")
+    console.log("hola");
     const keyPhraseResult = await getKeyPhrase(textOnlyJson); // Process textOnlyJson as needed
-    console.log(keyPhraseResult.map(block=>block.Text));
+    console.log(keyPhraseResult.map((block) => block.Text));
     // console.log(keyPhraseResult.filter(Text))
-    const quiz = await callOpenAi(keyPhraseResult.map(block=>block.Text)); // Assuming this function also returns a Promise
+    const quiz = await callOpenAi(keyPhraseResult.map((block) => block.Text)); // Assuming this function also returns a Promise
     return quiz; // Return or process the quiz further
   } catch (error) {
     console.error("Error getting key phrases or calling OpenAI:", error);
@@ -206,7 +221,7 @@ async function getKeyPhrase(jsonInput) {
   try {
     const response = await client.send(command);
     const filteredKeys = response.KeyPhrases.filter((item) => item.Score > 0.8);
-    console.log(filteredKeys)
+    console.log(filteredKeys);
     return filteredKeys; // Return the detected key phrases
   } catch (error) {
     console.error("Error detecting key phrases:", error);
@@ -214,18 +229,17 @@ async function getKeyPhrase(jsonInput) {
   }
 }
 
-async function callOpenAi(json) {
+async function callOpenAi(keywordsJson) {
   const openai = new OpenAI();
-  console.log("pee"+json);
+  console.log("pee" + keywordsJson);
   try {
     const completion = await openai.chat.completions.create({
       messages: [
         { role: "system", content: "You are a Quiz Generating assistant." },
         {
           role: "user",
-          content:
-            "Based on the given KEY words, Identify the possible 5 questions with well framed question and 4 options with 1 right answer for each question. The words are " +
-            json+" . Return the questions, options and one answer in the following strict json format [{'question': 'What is the capital of France?','options': ['Paris', 'London', 'Berlin', 'Madrid'], 'correct_option': 0 , Topic: 'Country'}, ",
+          content: "Generate five quiz questions based on the provided keywords. Each question should have four options, with one correct answer. Return the questions in JSON format with the following structure: [{'question': 'Example question?', 'options': ['Option 1', 'Option 2', 'Option 3', 'Option 4'], 'correct_option': 0, 'Topic': 'Example Topic'}]. Here are the keywords: " + keywordsJson
+  
         },
       ],
       model: "gpt-3.5-turbo",
@@ -239,10 +253,34 @@ async function callOpenAi(json) {
   }
 }
 
+async function getDynamoDb(params) {
+  console.log("11")
+
+  const dynamoDb = new DynamoDBClient(config);
+  const data = await dynamoDb.send(new QueryCommand(params));
+  console.log("Success", data.Items);
+  return data.Items;
+}
+
+async function getItemDynamoDb(params) {
+  console.log("11")
+
+  const dynamoDb = new DynamoDBClient(config);
+  try{
+    const data = await dynamoDb.send(new GetItemCommand(params));
+    console.log("Success", data);
+    return data;
+  }catch(error){
+    throw error;
+  }
+
+}
 module.exports = {
   extractFromS3,
   uploadFileToS3,
   uploadJsonToS3,
   getKeyPhrase,
   getObjectFromS3,
+  getDynamoDb,
+  getItemDynamoDb
 };

@@ -168,7 +168,7 @@ router.post("/getInsight", async (req, res) => {
       TableName: "quiz_performance_insigths",
       Key: {
         room_id:  {S:"tkrvmzwcua" },
-        // quiz_number: { N: "1" }, //quiz number currently hard coded, currently only 1 quiz can be used.
+        
       },
     };
     const getCommad = new GetItemCommand(params);

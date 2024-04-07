@@ -7,6 +7,8 @@ const {
   checkRoomIfExists,
   deleteRoom,
 } = require("../utils/roomDB");
+const { getDynamoDb, getItemDynamoDb } = require("./AWSfunctions");
+const { get } = require("./quizRoutes");
 
 const router = express.Router();
 
@@ -55,6 +57,7 @@ router.post("/delete", async (req, res) => {
 
 router.post("/join", async (req, res) => {
   const { roomId } = req.body;
+  console.log(roomId);
   try {
     const exists = await checkRoomIfExists({ roomId: roomId });
     console.log(exists);
@@ -71,4 +74,46 @@ router.post("/join", async (req, res) => {
   }
 });
 
+router.post("/getMyRooms", async (req, res) => {
+  console.log("11");
+  const userEmail = req.body.userEmail;
+  console.log(userEmail);
+  try {
+    const params = {
+      TableName: "NewRooms",
+      IndexName: "professorId-created_at-index", // The name of the GSI
+      KeyConditionExpression: "professorId = :professorId",
+      ExpressionAttributeValues: {
+        ":professorId": { S: userEmail },
+      },
+    };
+    console.log("3");
+
+    const result = await getDynamoDb(params);
+    res.json(result);
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+router.post("/reports", async (req, res) => {
+  const roomId = req.body.roomId;
+  try {
+    const params = {
+      TableName: "quiz_performance_insigths",
+      KeyConditionExpression: "#room_id = :room_id_value",
+      ExpressionAttributeNames: {
+        "#room_id": "room_id",
+      },
+      ExpressionAttributeValues: {
+        ":room_id_value": { S: roomId },
+      },
+    };
+    const response = await getDynamoDb(params);
+    console.log(response)
+    res.json(response);
+  } catch (error) {
+    res.status(404).json("Failed to get Reports");
+  }
+});
 module.exports = router;

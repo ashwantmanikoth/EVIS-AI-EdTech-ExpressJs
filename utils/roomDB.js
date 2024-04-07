@@ -28,16 +28,17 @@ async function createRoom(roomName, userEmail) {
 
   const roomId = generateRoomId();
   const input = {
-    TableName: "room",
+    TableName: "NewRooms",
     Item: {
       roomId: { S: roomId },
       professorId: { S: userEmail },
       roomName: { S: roomName },
+      created_at: { S: new Date().toISOString() },
     },
   };
 
   const roomExists = await checkRoomIfExists({ roomName: roomName });
-  console.log("checkd")
+  console.log("checkd");
   if (roomExists) {
     const command = new PutItemCommand(input);
     try {
@@ -68,7 +69,7 @@ async function createRoom(roomName, userEmail) {
 
 async function deleteRoom(roomId) {
   const input = {
-    TableName: "room",
+    TableName: "NewRooms",
     Key: {
       roomId: {
         S: roomId,
@@ -95,11 +96,12 @@ async function deleteRoom(roomId) {
 
 async function checkRoomIfExists(identifier) {
   console.log("kk");
+  console.log(identifier.roomId);
   /*Scannning if the new room name already exists or not */
   if (typeof identifier === "object" && identifier.hasOwnProperty("roomName")) {
     console.log("room name is " + identifier.roomName);
     const params = {
-      TableName: "room",
+      TableName: "NewRooms",
       FilterExpression: "roomName = :roomName",
       ExpressionAttributeValues: {
         ":roomName": { S: identifier.roomName },
@@ -122,7 +124,7 @@ async function checkRoomIfExists(identifier) {
   ) {
     const roomId = identifier.roomId;
     const params = {
-      TableName: "room",
+      TableName: "NewRooms",
       Key: {
         roomId: { S: identifier.roomId },
       },
@@ -245,10 +247,7 @@ async function createFeedbackTable(roomId) {
   try {
     const command = new CreateTableCommand(input);
     const response = await dynamoDb.send(command);
-    console.log(
-      "Table feedback_details_ created successfully: ",
-      response
-    );
+    console.log("Table feedback_details_ created successfully: ", response);
   } catch (error) {
     console.error("Error creating feedback_details_ table:", error);
     throw error;
