@@ -21,7 +21,7 @@ const {
 
 const {
   DynamoDBClient,
-  PutItemCommand,
+  ScanCommand,
   GetItemCommand,
   QueryCommand,
 } = require("@aws-sdk/client-dynamodb");
@@ -231,7 +231,6 @@ async function getKeyPhrase(jsonInput) {
 
 async function callOpenAi(keywordsJson) {
   const openai = new OpenAI();
-  console.log("pee" + keywordsJson);
   try {
     const completion = await openai.chat.completions.create({
       messages: [
@@ -239,7 +238,6 @@ async function callOpenAi(keywordsJson) {
         {
           role: "user",
           content: "Generate five quiz questions based on the provided keywords. Each question should have four options, with one correct answer. Return the questions in JSON format with the following structure: [{'question': 'Example question?', 'options': ['Option 1', 'Option 2', 'Option 3', 'Option 4'], 'correct_option': 0, 'Topic': 'Example Topic'}]. Here are the keywords: " + keywordsJson
-  
         },
       ],
       model: "gpt-3.5-turbo",
@@ -258,6 +256,16 @@ async function getDynamoDb(params) {
 
   const dynamoDb = new DynamoDBClient(config);
   const data = await dynamoDb.send(new QueryCommand(params));
+  console.log("Success", data.Items);
+  return data.Items;
+}
+
+
+async function getDynamoScanDb(params) {
+  console.log("11")
+
+  const dynamoDb = new DynamoDBClient(config);
+  const data = await dynamoDb.send(new ScanCommand(params));
   console.log("Success", data.Items);
   return data.Items;
 }
@@ -282,5 +290,6 @@ module.exports = {
   getKeyPhrase,
   getObjectFromS3,
   getDynamoDb,
-  getItemDynamoDb
+  getItemDynamoDb,
+  getDynamoScanDb
 };

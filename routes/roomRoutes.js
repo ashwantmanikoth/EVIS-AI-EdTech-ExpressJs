@@ -7,7 +7,7 @@ const {
   checkRoomIfExists,
   deleteRoom,
 } = require("../utils/roomDB");
-const { getDynamoDb, getItemDynamoDb } = require("./AWSfunctions");
+const { getDynamoDb, getDynamoScanDb } = require("./AWSfunctions");
 const { get } = require("./quizRoutes");
 
 const router = express.Router();
@@ -87,7 +87,6 @@ router.post("/getMyRooms", async (req, res) => {
         ":professorId": { S: userEmail },
       },
     };
-    console.log("3");
 
     const result = await getDynamoDb(params);
     res.json(result);
@@ -98,6 +97,7 @@ router.post("/getMyRooms", async (req, res) => {
 
 router.post("/reports", async (req, res) => {
   const roomId = req.body.roomId;
+  console.log(roomId)
   try {
     const params = {
       TableName: "quiz_performance_insigths",
@@ -110,6 +110,21 @@ router.post("/reports", async (req, res) => {
       },
     };
     const response = await getDynamoDb(params);
+    console.log(response)
+    res.json(response);
+  } catch (error) {
+    res.status(404).json("Failed to get Reports");
+  }
+});
+
+router.post("/feedbacks", async (req, res) => {
+  const roomId = req.body.roomId;    console.log(roomId)
+
+  try {
+    const params = {
+      TableName: "feedback_details_fw0yudhaeak",
+    };
+    const response = await getDynamoScanDb(params);
     console.log(response)
     res.json(response);
   } catch (error) {

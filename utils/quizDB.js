@@ -15,7 +15,6 @@ const dotenv = require("dotenv");
 // Load environment variables from .env file
 dotenv.config();
 
-
 // DynamoDB Client Configuration
 const config = {
   region: "us-east-1",
@@ -129,7 +128,6 @@ async function submitAnswer(submissionDetails) {
 }
 
 async function saveSubmission(submissionDetails) {
-
   const roomId = submissionDetails.roomId;
   const userId = submissionDetails.userId;
   const quizNumber = submissionDetails.quizNumber;
@@ -168,26 +166,28 @@ async function savePerformanceInsights(quizDetails) {
   console.log("savePerformanceInsights", quizDetails);
 
   if (typeof quizDetails === "object" && quizDetails.hasOwnProperty("roomId")) {
-
     const submissionDetails = await fetchQuizSubmissions(quizDetails);
-    console.log("savePerformanceInsights submissionDetails:", submissionDetails);
+    console.log(
+      "savePerformanceInsights submissionDetails:",
+      submissionDetails
+    );
 
-    if (typeof submissionDetails === "object" && submissionDetails.hasOwnProperty("averageScore")
-      && submissionDetails.hasOwnProperty("submissionCount")) {
-
-      quizDetails['averageScore'] = submissionDetails['averageScore'];
-      quizDetails['submissionCount'] = submissionDetails['submissionCount'];
+    if (
+      typeof submissionDetails === "object" &&
+      submissionDetails.hasOwnProperty("averageScore") &&
+      submissionDetails.hasOwnProperty("submissionCount")
+    ) {
+      quizDetails["averageScore"] = submissionDetails["averageScore"];
+      quizDetails["submissionCount"] = submissionDetails["submissionCount"];
 
       const dbResponse = await saveQuizInsightsToDB(quizDetails);
       return dbResponse;
-
     } else {
-
       return {
-        "isSuccess": false,
-        "errMsg": "Save performance insights failed - errror in calculating the avg score / total submissions count."
-      }
-
+        isSuccess: false,
+        errMsg:
+          "Save performance insights failed - errror in calculating the avg score / total submissions count.",
+      };
     }
   }
 }
