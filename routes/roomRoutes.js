@@ -8,7 +8,6 @@ const {
   deleteRoom,
 } = require("../utils/roomDB");
 const { getDynamoDb, getDynamoScanDb } = require("./AWSfunctions");
-const { get } = require("./quizRoutes");
 
 const router = express.Router();
 
