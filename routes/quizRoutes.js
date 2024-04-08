@@ -3,7 +3,6 @@ require("dotenv").config(); // This is the correct way to initialize dotenv in a
 
 const express = require("express");
 
-const { submitAnswer, savePerformanceInsights } = require("../utils/quizDB");
 const {
   extractFromS3,
   uploadFileToS3,
@@ -30,22 +29,6 @@ const router = express.Router();
 const multer = require("multer");
 
 const upload = multer({ dest: "uploads/" });
-
-router.post("/submitAnswer", async (req, res) => {
-  console.log("submitAnswer: ", req);
-  try {
-    const submitResponse = await submitAnswer(req.body);
-    console.log(submitResponse);
-    if (submitResponse.isSuccess) {
-      res.status(200).json({ message: "Submitted the quiz successfully" });
-    } else {
-      res.status(400).json({ message: submitResponse.errMsg });
-    }
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "Failed to submit answer." });
-  }
-});
 
 router.post("/upload", upload.single("file"), async (req, res) => {
   try {
@@ -100,7 +83,7 @@ router.post("/endQuiz", async (req, res) => {
     const endQuizResponse = await invokeLambda("endQuiz", req.body);
     console.log("endQuizResponse", endQuizResponse);
 
-    const performanceInsightsResponse = await savePerformanceInsights(req.body);
+    const performanceInsightsResponse = await invokeLambda("quiz_performance_insights", req.body);
     console.log("performanceInsightsResponse", performanceInsightsResponse);
 
     if (endQuizResponse.isSuccess) {
@@ -136,26 +119,6 @@ router.post("/startQuiz", async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Failed to End Quiz." });
-  }
-});
-
-router.post("/savePerformanceInsights", async (req, res) => {
-  console.log("savePerformanceInsights route: ", req);
-  try {
-    const performanceInsightsResponse = await savePerformanceInsights(req.body);
-    console.log(performanceInsightsResponse);
-    if (performanceInsightsResponse.isSuccess) {
-      res
-        .status(200)
-        .json({ message: "Saved the quiz performance insights successfully" });
-    } else {
-      res.status(400).json({ message: performanceInsightsResponse.errMsg });
-    } //note the question
-  } catch (error) {
-    console.log(error);
-    res
-      .status(500)
-      .json({ message: "Failed to save the quiz performance insights." });
   }
 });
 
