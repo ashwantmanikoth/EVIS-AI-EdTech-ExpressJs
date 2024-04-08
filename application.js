@@ -186,7 +186,7 @@ app.post("/api/auth/exchange", async (req, res) => {
   console.log(code);
   const clientId = process.env.COGNITO_CLIENT_ID;
   const clientSecret = process.env.COGNITO_CLIENT_SECRET;
-  const redirectUri = "https://localhost:3000/auth/callback";
+  const redirectUri = "https://54.226.10.191:3000/auth/callback";
   const cognitoDomain = process.env.COGNITO_DOMAIN_URL;
 
   const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString(
@@ -244,7 +244,7 @@ app.post("/api/auth/professor/exchange", async (req, res) => {
   console.log(code);
   const clientId = process.env.COGNITO_CLIENT_ID_PROFESSOR;
   const clientSecret = process.env.COGNITO_CLIENT_SECRET_PROFESSOR;
-  const redirectUri = "https://localhost:3000/auth/callback/professor";
+  const redirectUri = "https://54.226.10.191:3000/auth/callback/professor";
   const cognitoDomain = process.env.COGNITO_PROFESSOR_DOMAIN_URL;
 
   const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString(
