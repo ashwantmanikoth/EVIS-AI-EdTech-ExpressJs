@@ -237,7 +237,7 @@ async function callOpenAi(keywordsJson) {
         { role: "system", content: "You are a Quiz Generating assistant." },
         {
           role: "user",
-          content: "Generate five quiz questions based on the provided keywords. Each question should have four options, with one correct answer. Return the questions in JSON format with the following structure: [{'question': 'Example question?', 'options': ['Option 1', 'Option 2', 'Option 3', 'Option 4'], 'correct_option': 0, 'Topic': 'Example Topic'}]. Here are the keywords: " + keywordsJson
+          content: "Generate five quiz questions based on the provided keywords. Each question should have four options, with one correct answer, and make sure for all questions the topics should be 2. Return the questions in JSON format with the following structure: [{'question': 'Example question?', 'options': ['Option 1', 'Option 2', 'Option 3', 'Option 4'], 'correct_option': 0, 'topic': 'Example Topic'}]. Here are the keywords: " + keywordsJson
         },
       ],
       model: "gpt-3.5-turbo",
