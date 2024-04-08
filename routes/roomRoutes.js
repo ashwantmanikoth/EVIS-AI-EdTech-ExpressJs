@@ -117,11 +117,10 @@ router.post("/reports", async (req, res) => {
 });
 
 router.post("/feedbacks", async (req, res) => {
-  const roomId = req.body.roomId;    console.log(roomId)
-
+  const roomId = req.body.roomId;    
   try {
     const params = {
-      TableName: "feedback_details_fw0yudhaeak",
+      TableName: "feedback_details_"+roomId,
     };
     const response = await getDynamoScanDb(params);
     console.log(response)
