@@ -13,9 +13,12 @@ const router = express.Router();
 
 // POST /api/rooms/create
 router.post("/create", async (req, res) => {
+  console.log("here")
   try {
+    console.log(req.body)
     const roomName = req.body.roomName;
     const userEmail = req.body.userEmail;
+    console.log("here2")
 
     if (!roomName) {
       return res.status(400).send({ message: "Room name is required" });
