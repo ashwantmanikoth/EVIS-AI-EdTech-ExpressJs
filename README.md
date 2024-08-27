@@ -7,7 +7,7 @@ Please note that the frontend code for EVIS is located in a separate repository,
 
 ## Features
 
-- **Real-time Content Generation**: Captures lecture slides and voice recordings, processes them using AI, and generates relevant quizzes and engaging content for students.
+- **Real-time Content Generation**: Captures lecture slides, processes them using AI, and generates relevant quizzes and engaging content for students.
 - **Instant Feedback for Professors**: Provides immediate feedback to professors, enabling them to adjust and improve engagement during lectures.
 - **Cloud-based Architecture**: Utilizes AWS cloud services, including S3, Textract, Comprehend, DynamoDB, and Lambda, for scalable and efficient content processing and storage.
 - **AI Integration**: Incorporates AI to analyze content and generate quizzes, improving the learning experience for students.
@@ -60,7 +60,7 @@ POST /feedbacks: Retrieves feedback details for a specific room.
 
 ### Prerequisites
 Node.js (version 14 or later)
-ExpressJs
+Express.Js
 AWS account with access to S3, Textract, Comprehend, DynamoDB, and Lambda services
 OpenAI API key
 
@@ -90,6 +90,11 @@ The server will start on http://localhost:3000.
 
 ### Deployment
 For deployment, ensure that your AWS credentials and environment variables are properly configured in your production environment. You can deploy the backend on any Node.js-compatible hosting platform, such as AWS Elastic Beanstalk or Heroku.
+
+
+### Future Enhancements
+Voice Recordings Integration: The current implementation of EVIS focuses on capturing lecture slides. A future enhancement will include the integration of voice recordings, allowing the system to analyze and generate content based on both visual and audio inputs. This will further enhance the ability to generate quizzes and feedback in real-time.
+
 
 ### Contribution
 Feel free to contribute to the project by forking the repository, making changes, and submitting a pull request. Please ensure your code follows the existing style and includes appropriate tests.
